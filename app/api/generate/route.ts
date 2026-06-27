@@ -5,31 +5,56 @@ const client = new OpenAI({
 });
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const idea = body.idea;
+  try {
+    const body = await req.json();
+    const idea = body.idea;
 
-  const prompt = `
-You are an expert startup builder.
+    if (!idea) {
+      return Response.json(
+        { error: "No idea provided" },
+        { status: 400 }
+      );
+    }
 
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert startup founder who creates detailed business plans.",
+        },
+        {
+          role: "user",
+          content: `
 Turn this idea into a complete business plan:
 
 Idea: ${idea}
 
-Return:
+Include:
 - Business name
 - Slogan
 - Target audience
 - Pricing tiers
 - Marketing strategy
 - Website copy outline
-`;
+          `,
+        },
+      ],
+    });
 
-  const response = await client.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-  });
+    return Response.json({
+      result: response.choices[0].message.content,
+    });
+  } catch (error: any) {
+    console.error("OpenAI API Error:", error);
 
-  return Response.json({
-    result: response.choices[0].message.content,
-  });
+    return Response.json(
+      {
+        error: "Failed to generate business plan",
+        details: error?.message || "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
 }
