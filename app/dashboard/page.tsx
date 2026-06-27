@@ -6,18 +6,34 @@ export default function Dashboard() {
   const [idea, setIdea] = useState("");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function generate() {
-    setLoading(true);
+    try {
+      setLoading(true);
+      setError("");
+      setResult("");
 
-    const res = await fetch("/api/generate", {
-      method: "POST",
-      body: JSON.stringify({ idea }),
-    });
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ idea }),
+      });
 
-    const data = await res.json();
-    setResult(data.result);
-    setLoading(false);
+      if (!res.ok) {
+        throw new Error("API failed with status " + res.status);
+      }
+
+      const data = await res.json();
+
+      setResult(data.result || "No result returned");
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -26,7 +42,7 @@ export default function Dashboard() {
 
       <textarea
         style={{ width: "100%", height: "120px", marginTop: "20px" }}
-        placeholder="Example: I want to start a mobile detailing business"
+        placeholder="Enter your business idea..."
         onChange={(e) => setIdea(e.target.value)}
       />
 
@@ -35,14 +51,20 @@ export default function Dashboard() {
         style={{
           marginTop: "10px",
           padding: "10px 20px",
-          background: "black",
-          color: "white",
         }}
       >
-        {loading ? "Generating..." : "Generate Business"}
+        {loading ? "Generating..." : "Generate"}
       </button>
 
-      <pre style={{ marginTop: "20px" }}>{result}</pre>
+      {error && (
+        <p style={{ color: "red", marginTop: "10px" }}>
+          Error: {error}
+        </p>
+      )}
+
+      <pre style={{ marginTop: "20px", whiteSpace: "pre-wrap" }}>
+        {result}
+      </pre>
     </main>
   );
 }
