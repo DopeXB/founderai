@@ -1,9 +1,5 @@
 import OpenAI from "openai";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -16,45 +12,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an expert startup founder who creates detailed business plans.",
-        },
-        {
-          role: "user",
-          content: `
-Turn this idea into a complete business plan:
+    const apiKey = process.env.OPENAI_API_KEY;
 
-Idea: ${idea}
+    if (!apiKey) {
+      return Response.json(
+        { error: "Missing OpenAI API key in Vercel environment variables" },
+        { status: 500 }
+      );
+    }
 
-Include:
-- Business name
-- Slogan
-- Target audience
-- Pricing tiers
-- Marketing strategy
-- Website copy outline
-          `,
-        },
-      ],
+    const client = new OpenAI({
+      apiKey,
     });
 
-    return Response.json({
-      result: response.choices[0].message.content,
-    });
-  } catch (error: any) {
-    console.error("OpenAI API Error:", error);
-
-    return Response.json(
-      {
-        error: "Failed to generate business plan",
-        details: error?.message || "Unknown error",
-      },
-      { status: 500 }
-    );
-  }
-}
+    const response = await
